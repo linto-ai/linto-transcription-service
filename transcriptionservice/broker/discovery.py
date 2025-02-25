@@ -35,7 +35,7 @@ def list_available_services(ensure_alive: bool = False, as_json: bool = False) -
         host=host,
         port=int(port),
         db=SERVICE_DISCOVERY_DB,
-        password=os.environ.get("BROKER_PASS", "password"),
+        password=os.environ.get("BROKER_PASS"),
     )
 
     if ensure_alive:
