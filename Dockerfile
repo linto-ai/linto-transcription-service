@@ -3,7 +3,7 @@ LABEL maintainer="rbaraglia@linagora.com"
 
 WORKDIR /usr/src/app
 
-RUN apt-get update && apt-get -y install ffmpeg
+RUN apt-get update && apt-get -y install ffmpeg gosu
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
