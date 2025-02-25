@@ -1,0 +1,15 @@
+{
+  "label": {
+    "enabled": true,
+    "endpoints": {
+      "${GATEWAY_PROXY_PATH}": {
+      }
+    },
+    "port": ${PROXIED_SERVICE_HTTP_PORT},
+    "desc": ""
+  },
+  "name": "${SERVICE_NAME}",
+  "serviceName": "${SERVICE_NAME}",
+  "host": "${PROXIED_SERVICE_BASE_URL}",
+  "healthcheck" : "${PROXIED_SERVICE_BASE_URL}/healthcheck"
+}

@@ -96,6 +96,17 @@ docker-compose up .
 
 *: See [Subservice resolution](#subservice-resolution)
 
+#### HEARTBEAT SETTINGS
+
+| Env Variable        | Description | Example |
+|---------------------|-------------|---------|
+| `REGISTRATION_MODE` | Enables service registration to the API Gateway via HTTP. If this variable is not set, all the following variables will be ignored. | `HTTP` or unset |
+| `PROXIED_SERVICE_BASE_URL` | The base URL for the transcription service. | `http://transcription-service` |
+| `PROXIED_SERVICE_HTTP_PORT` | The port on which the service is running. | `80` |
+| `GATEWAY_SERVICE_BASE_URL` | The API Gateway route for new service registration. | `http://api-gateway` |
+| `GATEWAY_PROXY_PATH` | The proxifier path on the gateway side. | `/transcribe` |
+
+
 ## API
 The transcription service offers a transcription API REST to submit transcription requests.
 
