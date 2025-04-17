@@ -354,7 +354,7 @@ if __name__ == "__main__":
     serving = GunicornServing(
         app,
         {
-            "bind": "{}:{}".format("0.0.0.0", 80),
+            "bind": "{}:{}".format("0.0.0.0", config.webserver_http_port),
             "workers": config.concurrency + 1,
             # "timeout": 3600 * 24,
         },
