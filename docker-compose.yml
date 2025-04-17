@@ -7,7 +7,7 @@ services:
       - $SHARED_FOLDER/audio:/opt/audio
     env_file: .env
     ports:
-      - "$SERVINGPORT:80"
+      - "$SERVINGPORT:8080"
     networks:
       - transcription-net
 

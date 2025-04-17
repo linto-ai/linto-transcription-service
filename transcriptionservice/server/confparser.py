@@ -14,6 +14,12 @@ def createParser() -> argparse.ArgumentParser:
         help="Serving workers (default=10)",
         default=os.environ.get("CONCURRENCY", 10),
     )
+    parser.add_argument(
+        "--webserver_http_port",
+        type=int,
+        help="Webserver HTTP port (default=8080)",
+        default=os.environ.get("WEBSERVER_HTTP_PORT", 8080),
+    )
 
     # SWAGGER
     parser.add_argument("--swagger_url", type=str, help="Swagger interface url", default="/docs")

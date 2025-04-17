@@ -58,7 +58,7 @@ Fill the .env with the value described below [Environment Variables](#environmen
 
 2- Launch a container:
 ```bash
-docker run --rm -it -p $SERVING_PORT:80 \
+docker run --rm -it -p $SERVING_PORT:8080 \
     -v $YOUR_SHARED_FOLDER:/opt/audio \
     --env-file .env \
     --name my_transcription_api \
@@ -102,7 +102,7 @@ docker-compose up .
 |---------------------|-------------|---------|
 | `REGISTRATION_MODE` | Enables service registration to the API Gateway via HTTP. If this variable is not set, all the following variables will be ignored. | `HTTP` or unset |
 | `PROXIED_SERVICE_BASE_URL` | The base URL for the transcription service. | `http://transcription-service` |
-| `PROXIED_SERVICE_HTTP_PORT` | The port on which the service is running. | `80` |
+| `PROXIED_SERVICE_HTTP_PORT` | The port on which the service is running. | `8080` |
 | `GATEWAY_SERVICE_BASE_URL` | The API Gateway route for new service registration. | `http://api-gateway` |
 | `GATEWAY_PROXY_PATH` | The proxifier path on the gateway side. | `/transcribe` |
 

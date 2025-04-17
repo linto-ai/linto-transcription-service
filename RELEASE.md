@@ -1,3 +1,6 @@
+# 1.3.1
+- Add WEBSERVER_HTTP_PORT environment variable
+
 # 1.3.0
  - Add input option "language" that can be passed at each request
  - Add result of language detection (or given language) in the output, for each segment
