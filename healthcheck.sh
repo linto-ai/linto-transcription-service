@@ -2,7 +2,7 @@
 
 set -eax
 
-curl -f http://localhost:80/healthcheck || exit 1
+curl -f http://localhost:$WEBSERVER_HTTP_PORT/healthcheck || exit 1
 
 if [ "$REGISTRATION_MODE" = "HTTP" ]
 then

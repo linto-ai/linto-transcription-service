@@ -83,6 +83,7 @@ docker-compose up .
 
 | Env variable| Description | Example |
 |:-|:-|:-|
+|`WEBSERVER_HTTP_PORT`| Port number used by the web server to listen for HTTP requests. | `8080` |
 |`LANGUAGE`| Language code (BCP-47 code) used for text normalization (digits to words, punctuation normalization, ...) | `fr-FR` |
 |`KEEP_AUDIO`|Either audio files are kept after request|`1` (true) \| `0` (false)|
 |`CONCURRENCY`|Number of workers (default 10)|`10`|
@@ -102,9 +103,8 @@ docker-compose up .
 |---------------------|-------------|---------|
 | `REGISTRATION_MODE` | Enables service registration to the API Gateway via HTTP. If this variable is not set, all the following variables will be ignored. | `HTTP` or unset |
 | `PROXIED_SERVICE_BASE_URL` | The base URL for the transcription service. | `http://transcription-service` |
-| `PROXIED_SERVICE_HTTP_PORT` | The port on which the service is running. | `8080` |
 | `GATEWAY_SERVICE_BASE_URL` | The API Gateway route for new service registration. | `http://api-gateway` |
-| `GATEWAY_PROXY_PATH` | The proxifier path on the gateway side. | `/transcribe` |
+| `GATEWAY_PROXY_PATH` | Base path on the API gateway that routes requests to this service. | `/transcribe` |
 
 
 ## API
