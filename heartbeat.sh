@@ -16,6 +16,8 @@ if [ ! -f "$TEMPLATE_FILE" ]; then
     exit 1
 fi
 
+# set default value for WEBSERVER_HTTP_PORT
+WEBSERVER_HTTP_PORT="${WEBSERVER_HTTP_PORT:-8080}"
 
 json_payload=$(envsubst < "$TEMPLATE_FILE")
 curl -f -X POST -H "Content-Type: application/json" -d "$json_payload" "${GATEWAY_SERVICE_BASE_URL}/gateway/services?type=transcription"
