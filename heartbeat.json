@@ -2,14 +2,17 @@
   "label": {
     "enabled": true,
     "endpoints": {
-      "${GATEWAY_PROXY_PATH}": {
-      }
+      "${GATEWAY_PROXY_PATH}": {}
     },
-    "port": ${WEBSERVER_HTTP_PORT},
-    "desc": ""
+    "port": "${WEBSERVER_HTTP_PORT}",
+    "desc": "${GATEWAY_DESCRIPTION}"
   },
   "name": "${SERVICE_NAME}",
   "serviceName": "${SERVICE_NAME}",
   "host": "${PROXIED_SERVICE_BASE_URL}:${WEBSERVER_HTTP_PORT}/",
-  "healthcheck" : "${PROXIED_SERVICE_BASE_URL}:${WEBSERVER_HTTP_PORT}/healthcheck"
+  "healthcheck": "${PROXIED_SERVICE_BASE_URL}:${WEBSERVER_HTTP_PORT}/healthcheck",
+  "model_quality": "${MODEL_QUALITY}",
+  "accoustic": "${ACCOUSTIC}",
+  "model_type": "${MODEL_TYPE}",
+  "language": "${LANGUAGE}"
 }
