@@ -4,8 +4,8 @@
     "endpoints": {
       "${GATEWAY_PROXY_PATH}": {}
     },
-    "port": "${WEBSERVER_HTTP_PORT}",
-    "desc": "${GATEWAY_DESCRIPTION}"
+    "port": ${WEBSERVER_HTTP_PORT},
+    "desc": ${GATEWAY_DESCRIPTION}
   },
   "name": "${SERVICE_NAME}",
   "serviceName": "${SERVICE_NAME}",
