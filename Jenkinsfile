@@ -1,7 +1,19 @@
+def notifyLintoDeploy(service_name, tag, commit_sha) {
+    echo "Notifying linto-deploy for ${service_name}:${tag} (commit: ${commit_sha})..."
+    withCredentials([usernamePassword(
+        credentialsId: 'linto-deploy-bot',
+        usernameVariable: 'GITHUB_APP',
+        passwordVariable: 'GITHUB_TOKEN'
+    )]) {
+        writeFile file: 'payload.json', text: "{\"event_type\":\"update-service\",\"client_payload\":{\"service\":\"${service_name}\",\"tag\":\"${tag}\",\"commit_sha\":\"${commit_sha}\"}}"
+        sh 'curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3+json" -d @payload.json https://api.github.com/repos/linto-ai/linto-deploy/dispatches'
+    }
+}
+
 pipeline {
     agent any
     environment {
-        DOCKER_HUB_REPO = "lintoai/linto-transcription-service"
+        DOCKER_HUB_REPO = "lintoai/linto-platform-transcription-service"
         DOCKER_HUB_CRED = 'docker-hub-credentials'
         VERSION = ''
     }
@@ -14,9 +26,11 @@ pipeline {
             steps {
                 echo 'Publishing latest'
                 script {
+                    def commit_sha = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+
                     image = docker.build(env.DOCKER_HUB_REPO)
                     VERSION = sh(
-                        returnStdout: true, 
+                        returnStdout: true,
                         script: "awk -v RS='' '/#/ {print; exit}' RELEASE.md | head -1 | sed 's/#//' | sed 's/ //'"
                     ).trim()
 
@@ -24,6 +38,8 @@ pipeline {
                         image.push("${VERSION}")
                         image.push('latest')
                     }
+
+                    notifyLintoDeploy('linto-transcription-service', VERSION, commit_sha)
                 }
             }
         }
