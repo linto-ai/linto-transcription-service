@@ -59,24 +59,5 @@ pipeline {
                 }
             }
         }
-
-        // TEMPORARY: Build slim and alpine variants for testing
-        stage('Build slim and alpine variants'){
-            when{
-                branch 'feature/slim-alpine-images'
-            }
-            steps {
-                echo 'Building slim and alpine variants for testing'
-                script {
-                    def slim = docker.build("${env.DOCKER_HUB_REPO}", "-f Dockerfile.slim .")
-                    def alpine = docker.build("${env.DOCKER_HUB_REPO}", "-f Dockerfile.alpine .")
-
-                    docker.withRegistry('https://registry.hub.docker.com', env.DOCKER_HUB_CRED) {
-                        slim.push('slim-test')
-                        alpine.push('alpine-test')
-                    }
-                }
-            }
-        }
     }// end stages
 }

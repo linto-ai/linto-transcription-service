@@ -1,9 +1,12 @@
-FROM python:3.10
+FROM python:3.10-alpine
 LABEL maintainer="rbaraglia@linagora.com"
 
 WORKDIR /usr/src/app
 
-RUN apt-get update && apt-get -y install ffmpeg gosu gettext-base
+RUN apk upgrade --no-cache && apk add --no-cache \
+    bash curl ffmpeg gettext su-exec shadow \
+    build-base python3-dev \
+    && ln -s /sbin/su-exec /usr/local/bin/gosu
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
@@ -22,4 +25,3 @@ HEALTHCHECK CMD ./healthcheck.sh
 EXPOSE 80
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
-
