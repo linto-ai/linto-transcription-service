@@ -1,3 +1,9 @@
+# 1.4.0
+- Migrate Docker image from python:3.10 to python:3.10-alpine for reduced image size and improved security
+- Add security_level field to service registry heartbeat (with default value of 0)
+- Fix heartbeat when environment variables are empty (proper export of default values)
+- Add linto-deploy notification after Docker image push in CI pipeline
+
 # 1.3.1
 - Add WEBSERVER_HTTP_PORT environment variable
 
