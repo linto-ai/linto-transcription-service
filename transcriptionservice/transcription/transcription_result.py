@@ -11,7 +11,7 @@ class Word:
     word: str
     start: float
     end: float
-    conf: float
+    conf: float = 0.0
 
     def apply_offset(self, offset: float):
         self.start += offset
