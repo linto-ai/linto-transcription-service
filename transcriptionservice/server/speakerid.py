@@ -103,7 +103,9 @@ def speaker_id_service_info(service) -> dict:
     if isinstance(info, str):
         try:
             info = json.loads(info)
-        except json.JSONDecodeError:
+        except ValueError:
+            # flask.json (used across this module per codebase convention) does not
+            # expose JSONDecodeError; json.loads raises ValueError on malformed input.
             return None
     if isinstance(info, dict) and info.get("speaker_identification") is True:
         return info
