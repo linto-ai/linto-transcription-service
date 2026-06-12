@@ -22,6 +22,7 @@ The service allows you to:
     * [Transcription configuration](#transcription-configuration)
   <!-- * [/transcribe-multi](#transcribe-multi)
     * [MultiTranscription config](#multitranscription-config) -->
+  * [/speaker-identification](#speaker-identification)
   * [/job/{jobid}](#job)
   * [/results/{result_id}](#results)
     * [Transcription results](#transcription-results)
@@ -94,6 +95,7 @@ docker-compose up .
 |`MONGO_PORT`|MongoDB results port|`27017`|
 |`RESOLVE_POLICY`| Subservice resolve policy (default ANY) * | `ANY` \| `DEFAULT` \| `STRICT` |
 |<`SERVICE_TYPE`>`_DEFAULT`| Default serviceName for subtask <`SERVICE_TYPE`> * | `punctuation-1` |
+|`SPEAKER_ID_API_TOKEN`| (Optional) Static token required as `X-Speaker-Id-Token` header on speaker identification requests (see [/speaker-identification](#speaker-identification)) | `my-secret-token` |
 
 *: See [Subservice resolution](#subservice-resolution)
 
@@ -241,7 +243,8 @@ It is structured as follows:
     "enableDiarization": true,  # Enables speaker diarization or not (default: false).
     "numberOfSpeaker": null,    # If set, forces number of speakers.
     "maxNumberOfSpeaker": 50,   # If set and `numberOfSpeaker` is not, limit the maximum number of speakers.
-    "speakerIdentification": null,  # Names of speakers to identify (depends on the installation of the diarization worker).
+    "speakerIdentification": null,  # (Legacy) Names of speakers to identify (depends on the installation of the diarization worker).
+    "speakerIdentificationConfig": null,  # Speaker identification configuration (see Speaker identification).
     "serviceName": null         # Force serviceName (See SubService Resolving).
   },
   "punctuationConfig": {
@@ -259,6 +262,32 @@ Note that the role of this parameter is different from the role of the env varia
 
 To enable speaker identification, the `speakerIdentification` field of the diarization configuration can be set to the wildcard “`*`” to enable all speakers, or to a list of speaker names (JSON format. exemple : “`["John Doe", "Bob"]`”).
 The diarization worker must have been set so that all speaker names can be matched to a set of speech samples.
+
+##### Speaker identification (multi-collections)
+
+When the diarization worker supports multi-collection speaker identification (Qdrant backed), the `speakerIdentificationConfig` object can be used instead of the legacy `speakerIdentification` field (if both are set, the object takes precedence and the legacy field is ignored):
+
+```json
+{
+  "diarizationConfig": {
+    "enableDiarization": true,
+    "speakerIdentificationConfig": {
+      "organizationId": "64ff00112233445566778899",  # Required, 24 hexadecimal characters.
+      "collections": ["spkid_64ff00112233445566778899_65aa00112233445566778899"],  # Required, 1 to 16 collection names matching spkid_{organizationId}_{collectionId}.
+      "speakers": "*",          # Optional, wildcard (default) or list of speaker identifiers.
+      "minSimilarity": null     # Optional, minimum similarity threshold (defaults to the worker setting).
+    }
+  }
+}
+```
+
+Requests carrying a `speakerIdentificationConfig`:
+* require `enableDiarization` to be true (`400` otherwise),
+* require the `X-Organization-Id` header, equal to `organizationId` (`403` otherwise),
+* must only reference collections prefixed with `spkid_{organizationId}_` (`403` otherwise),
+* require the `X-Speaker-Id-Token` header when the `SPEAKER_ID_API_TOKEN` environment variable is set (`401` otherwise).
+
+When speaker identification was requested, the transcription result contains an additional `diarization_speakers` field holding the speaker list returned by the worker (including `spk_id_score` identification scores).
 
 <!-- ### /transcribe-multi
 The /transcribe-multi route allows POST request containing multiple audio files. It is assumed each file contains a speaker or a group of speaker and files taken together form a conversation.
@@ -294,6 +323,27 @@ The transcription configuration describes the transcription parameters and flags
   }
 }
 ``` -->
+
+### /speaker-identification
+
+The `/speaker-identification/*` routes allow the management of speaker identification voiceprints and collections. They are only functional when at least one diarization worker registered with speaker identification support (`info.speaker_identification == true`).
+
+All routes:
+* require the `X-Organization-Id` header (24 hexadecimal characters),
+* require the `X-Speaker-Id-Token` header when the `SPEAKER_ID_API_TOKEN` environment variable is set (`401` otherwise),
+* check that any referenced collection matches `spkid_{organizationId}_{collectionId}` (`403` otherwise),
+* accept an optional `serviceName` query parameter to force a specific diarization service,
+* return `404` when no speaker identification capable service is available, `504` on worker timeout and `502` on worker failure (worker message relayed in `{"error": ...}`).
+
+| Method & path | Body | Response 200 |
+|:-|:-|:-|
+| `POST /speaker-identification/voiceprint` | multipart `file` (1..n audio files) | `{"vector": [...], "modelId": "...", "dim": 192, "durationUsed": 42.0}` |
+| `PUT /speaker-identification/collections/{collection}/speakers/{speakerId}` | JSON `{"name": "...", "vector": [...], "modelId": "..."}` | `{"status": "ok"}` |
+| `DELETE /speaker-identification/collections/{collection}/speakers/{speakerId}` | — | `{"status": "ok"}` |
+| `DELETE /speaker-identification/collections/{collection}` | — | `{"status": "ok"}` |
+| `GET /speaker-identification/info` | — | `{"enabled": true, "modelId": "...", "dim": 192, "serviceName": "..."}` |
+
+`{speakerId}` must match `label:{hex24}` or `user:{hex24}`.
 
 ### /job/
 
