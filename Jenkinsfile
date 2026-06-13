@@ -10,11 +10,26 @@ def notifyLintoDeploy(service_name, tag, commit_sha) {
     }
 }
 
+// Best-effort deploy of a freshly built image to the staging cluster (full CI/CD).
+// Needs a Jenkins SSH credential 'staging-deploy-ssh' (key for ubuntu@bm2-3s);
+// if absent the build still succeeds (push-only).
+def stagingDeploy(image_name, tag) {
+    try {
+        withCredentials([sshUserPrivateKey(credentialsId: 'staging-deploy-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
+            sh "ssh -i \$SSH_KEY -o StrictHostKeyChecking=no \$SSH_USER@163.114.159.33 'staging-deploy ${image_name} ${tag}'"
+        }
+    } catch (err) {
+        echo "Staging auto-deploy skipped for ${image_name}:${tag} (add the 'staging-deploy-ssh' credential to enable): ${err}"
+    }
+}
+
 pipeline {
     agent any
     environment {
         DOCKER_HUB_REPO = "lintoai/linto-transcription-service"
         DOCKER_HUB_CRED = 'docker-hub-credentials'
+        STAGING_REGISTRY = "registry.staging.linto.ai/lintoai/linto-transcription-service"
+        STAGING_REGISTRY_CRED = 'staging-registry-credentials'
         VERSION = ''
     }
 
@@ -51,11 +66,35 @@ pipeline {
             steps {
                 echo 'Publishing unstable'
                 script {
+                    def changedFiles = sh(returnStdout: true, script: 'git diff --name-only HEAD^ HEAD').trim()
+                    // Skip the latest-unstable rebuild for purely CI/docs commits
+                    if (changedFiles.readLines().every { it == 'Jenkinsfile' || it.endsWith('.md') }) {
+                        echo "Only CI/docs changed (${changedFiles}); skip latest-unstable rebuild"
+                        return
+                    }
                     image = docker.build(env.DOCKER_HUB_REPO)
 
                     docker.withRegistry('https://registry.hub.docker.com', env.DOCKER_HUB_CRED) {
                         image.push('latest-unstable')
                     }
+                }
+            }
+        }
+
+        stage('Docker build for staging branches'){
+            when{
+                branch 'staging/*'
+            }
+            steps {
+                echo 'Building staging feature-branch image (private registry, never Docker Hub)'
+                script {
+                    def slug = env.BRANCH_NAME.replaceFirst('^staging/', '').replaceAll('[^a-zA-Z0-9]+', '-').toLowerCase()
+                    def tag = "dev-${slug}"
+                    image = docker.build(env.STAGING_REGISTRY)
+                    docker.withRegistry('https://registry.staging.linto.ai', env.STAGING_REGISTRY_CRED) {
+                        image.push(tag)
+                    }
+                    stagingDeploy('linto-transcription-service', tag)
                 }
             }
         }
