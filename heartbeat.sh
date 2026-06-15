@@ -21,8 +21,11 @@ WEBSERVER_HTTP_PORT="${WEBSERVER_HTTP_PORT:-8080}"
 ACCOUSTIC="${ACCOUSTIC:-1}"
 MODEL_QUALITY="${MODEL_QUALITY:-1}"
 SECURITY_LEVEL="${SECURITY_LEVEL:-0}"
+# Optional display order (lower = higher priority / recommended). Empty by
+# default: the gateway/frontend treat an unset order gracefully.
+SERVICE_ORDER="${SERVICE_ORDER:-}"
 
-export WEBSERVER_HTTP_PORT ACCOUSTIC MODEL_QUALITY SECURITY_LEVEL
+export WEBSERVER_HTTP_PORT ACCOUSTIC MODEL_QUALITY SECURITY_LEVEL SERVICE_ORDER
 
 if [ -z "$GATEWAY_DESCRIPTION" ]; then
     export GATEWAY_DESCRIPTION="{\"en\": \"${SERVICE_NAME}\", \"fr\": \"${SERVICE_NAME}\"}"

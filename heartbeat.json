@@ -15,5 +15,6 @@
   "accoustic": "${ACCOUSTIC}",
   "model_type": "${MODEL_TYPE}",
   "language": "${LANGUAGE}",
-  "security_level": "${SECURITY_LEVEL}"
+  "security_level": "${SECURITY_LEVEL}",
+  "order": "${SERVICE_ORDER}"
 }
