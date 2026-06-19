@@ -4,3 +4,4 @@
 .envcontainer
 start_*
 *.wav
+.venv-spkid

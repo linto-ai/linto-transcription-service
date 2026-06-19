@@ -16,9 +16,13 @@ from transcriptionservice.server.confparser import createParser
 from transcriptionservice.server.formating import formatResult
 from transcriptionservice.server.mongodb.db_client import DBClient
 from transcriptionservice.server.serving import GunicornServing
+from transcriptionservice.server.speakerid import check_speaker_id_auth, speakerid_bp
 from transcriptionservice.server.swagger import setupSwaggerUI
 from transcriptionservice.server.utils import fileHash, read_timestamps, requestlog
 from transcriptionservice.server.utils.ressources import write_ressource
+from transcriptionservice.transcription.configs.taskconfig import (
+    SpeakerIdentificationError,
+)
 from transcriptionservice.transcription.configs.transcriptionconfig import (
     TranscriptionConfig,
     # Futre: TranscriptionConfigMulti,
@@ -34,6 +38,7 @@ SUPPORTED_HEADER_FORMAT = ["text/plain", "application/json", "text/vtt", "text/s
 app = Flask("__services_manager__")
 app.config["JSON_AS_ASCII"] = False
 app.config["JSON_SORT_KEYS"] = False
+app.register_blueprint(speakerid_bp)
 
 
 @app.route("/healthcheck", methods=["GET"])
@@ -245,9 +250,21 @@ def transcription():
             request.form.get("transcriptionConfig", {})
         )
         logger.debug(transcription_config)
+    except SpeakerIdentificationError as error:
+        logger.debug(request.form.get("transcriptionConfig", {}))
+        return str(error), error.status_code
     except Exception:
         logger.debug(request.form.get("transcriptionConfig", {}))
         return "Failed to interpret transcription config", 400
+
+    # Speaker identification requests require the organization header (and optional token)
+    speaker_id_config = transcription_config.diarizationConfig.speakerIdentificationConfig
+    if speaker_id_config is not None:
+        auth_error = check_speaker_id_auth(
+            request.headers, speaker_id_config["organizationId"]
+        )
+        if auth_error is not None:
+            return auth_error
 
     # The hash depends on options (of what comes before STT)
     file_hash = f"{file_hash} {timestamps if timestamps is not None else transcription_config.vadConfig.toJson()}".encode("utf8")

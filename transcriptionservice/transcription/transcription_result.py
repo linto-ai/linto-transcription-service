@@ -1,6 +1,6 @@
 """The transcription_result module holds classes responsible for holding, merging and formating transcription results."""
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Dict, List, Tuple, Union, Any
 
 
@@ -30,6 +30,12 @@ class DiarizationSegment:
     seg_end: float
     spk_id: Any
     seg_id: int
+
+    @classmethod
+    def fromDict(cls, segment: dict) -> "DiarizationSegment":
+        """Create a DiarizationSegment from a dictionary, ignoring unknown keys"""
+        known_keys = set(f.name for f in fields(cls))
+        return cls(**{k: v for k, v in segment.items() if k in known_keys})
 
     @property
     def json(self) -> dict:
@@ -98,6 +104,7 @@ class TranscriptionResult:
         self.words = []
         self.segments = []
         self.diarizationSegments = []
+        self.diarizationSpeakers = []
         self.words_language = None
         if transcriptions:
             self._mergeTranscription(transcriptions, spk_ids)
@@ -158,9 +165,13 @@ class TranscriptionResult:
             else diarizationResult
         )
 
+        # Keep the speaker list from the worker (holds identification scores when
+        # speaker identification was requested)
+        self.diarizationSpeakers = diarization_data.get("speakers", []) or []
+
         # Get segments ordered by start time
         self.diarizationSegments = [
-            DiarizationSegment(**segment)
+            DiarizationSegment.fromDict(segment)
             for segment in sorted(
                 diarization_data["segments"], key=lambda x: x["seg_begin"]
             )
@@ -374,9 +385,12 @@ class TranscriptionResult:
             result.segments.append(seg)
 
         result.diarizationSegments = [
-            DiarizationSegment(**diarizationSegment)
+            DiarizationSegment.fromDict(diarizationSegment)
             for diarizationSegment in resultDict["diarization_segments"]
         ]
+
+        # Optional field, may be missing in older results
+        result.diarizationSpeakers = resultDict.get("diarization_speakers", []) or []
 
         return result
 
@@ -388,4 +402,5 @@ class TranscriptionResult:
             "confidence": self.transcription_confidence,
             "segments": [s.json for s in self.segments],
             "diarization_segments": [seg.json for seg in self.diarizationSegments],
+            "diarization_speakers": self.diarizationSpeakers,
         }

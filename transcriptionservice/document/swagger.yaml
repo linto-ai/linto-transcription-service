@@ -153,6 +153,283 @@ paths:
                 type: string
                 default: "The server encountered an unexpected error."
         
+  /speaker-identification/voiceprint:
+    post:
+      tags:
+      - Speaker Identification API
+      summary: Compute a voiceprint vector from one or several enrollment audio files
+      parameters:
+        - $ref: '#/components/parameters/organizationIdHeader'
+        - $ref: '#/components/parameters/speakerIdTokenHeader'
+        - $ref: '#/components/parameters/speakerIdServiceName'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        200:
+          description: "Voiceprint successfully computed"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/voiceprintResult'
+        400:
+          description: "Validation error (missing file, bad header)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        401:
+          description: "Invalid or missing X-Speaker-Id-Token header"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        404:
+          description: "No speaker identification service available"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        502:
+          description: "The worker task failed (worker message relayed in error)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        504:
+          description: "The worker task timed out"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+
+  /speaker-identification/collections/{collection}/speakers/{speakerId}:
+    put:
+      tags:
+      - Speaker Identification API
+      summary: Create or replace a speaker voiceprint within a collection
+      parameters:
+        - $ref: '#/components/parameters/organizationIdHeader'
+        - $ref: '#/components/parameters/speakerIdTokenHeader'
+        - $ref: '#/components/parameters/speakerIdServiceName'
+        - $ref: '#/components/parameters/speakerIdCollection'
+        - $ref: '#/components/parameters/speakerIdSpeakerId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, vector, modelId]
+              properties:
+                name:
+                  type: string
+                  description: Display name of the speaker
+                vector:
+                  type: array
+                  items:
+                    type: number
+                  description: Voiceprint vector (as returned by /speaker-identification/voiceprint)
+                modelId:
+                  type: string
+                  description: Embedding model identifier the vector was computed with
+      responses:
+        200:
+          description: "Speaker successfully upserted"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdStatus'
+        400:
+          description: "Validation error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        401:
+          description: "Invalid or missing X-Speaker-Id-Token header"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        403:
+          description: "The collection does not belong to the declared organization"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        404:
+          description: "No speaker identification service available"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        502:
+          description: "The worker task failed (worker message relayed in error)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        504:
+          description: "The worker task timed out"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+    delete:
+      tags:
+      - Speaker Identification API
+      summary: Delete a speaker voiceprint from a collection
+      parameters:
+        - $ref: '#/components/parameters/organizationIdHeader'
+        - $ref: '#/components/parameters/speakerIdTokenHeader'
+        - $ref: '#/components/parameters/speakerIdServiceName'
+        - $ref: '#/components/parameters/speakerIdCollection'
+        - $ref: '#/components/parameters/speakerIdSpeakerId'
+      responses:
+        200:
+          description: "Speaker successfully deleted (idempotent)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdStatus'
+        400:
+          description: "Validation error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        401:
+          description: "Invalid or missing X-Speaker-Id-Token header"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        403:
+          description: "The collection does not belong to the declared organization"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        404:
+          description: "No speaker identification service available"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        502:
+          description: "The worker task failed (worker message relayed in error)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        504:
+          description: "The worker task timed out"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+
+  /speaker-identification/collections/{collection}:
+    delete:
+      tags:
+      - Speaker Identification API
+      summary: Drop a whole speaker identification collection
+      parameters:
+        - $ref: '#/components/parameters/organizationIdHeader'
+        - $ref: '#/components/parameters/speakerIdTokenHeader'
+        - $ref: '#/components/parameters/speakerIdServiceName'
+        - $ref: '#/components/parameters/speakerIdCollection'
+      responses:
+        200:
+          description: "Collection successfully dropped (idempotent)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdStatus'
+        400:
+          description: "Validation error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        401:
+          description: "Invalid or missing X-Speaker-Id-Token header"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        403:
+          description: "The collection does not belong to the declared organization"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        404:
+          description: "No speaker identification service available"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        502:
+          description: "The worker task failed (worker message relayed in error)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        504:
+          description: "The worker task timed out"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+
+  /speaker-identification/info:
+    get:
+      tags:
+      - Speaker Identification API
+      summary: Expose the speaker identification capability (from the service registry, no worker call)
+      parameters:
+        - $ref: '#/components/parameters/organizationIdHeader'
+        - $ref: '#/components/parameters/speakerIdTokenHeader'
+        - $ref: '#/components/parameters/speakerIdServiceName'
+      responses:
+        200:
+          description: "Speaker identification is available"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdInfo'
+        400:
+          description: "Validation error (missing header)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        401:
+          description: "Invalid or missing X-Speaker-Id-Token header"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/speakerIdError'
+        404:
+          description: "No speaker identification capable service registered"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    enum: [false]
+
   /job/{jobid}:
     get:
       tags:
@@ -289,6 +566,42 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  parameters:
+    organizationIdHeader:
+      name: X-Organization-Id
+      in: header
+      required: true
+      description: Organization identifier (24 hexadecimal characters)
+      schema:
+        type: string
+    speakerIdTokenHeader:
+      name: X-Speaker-Id-Token
+      in: header
+      required: false
+      description: Static API token, required when SPEAKER_ID_API_TOKEN is set on the service
+      schema:
+        type: string
+    speakerIdServiceName:
+      name: serviceName
+      in: query
+      required: false
+      description: Force a specific speaker identification capable diarization service
+      schema:
+        type: string
+    speakerIdCollection:
+      name: collection
+      in: path
+      required: true
+      description: "Qdrant collection name, must match spkid_{organizationId}_{collectionId}"
+      schema:
+        type: string
+    speakerIdSpeakerId:
+      name: speakerId
+      in: path
+      required: true
+      description: "Speaker identifier, must match (label|user):{24 hexadecimal characters}"
+      schema:
+        type: string
   schemas:
     transcriptionConfig:
       type: object
@@ -335,10 +648,79 @@ components:
         maxNumberOfSpeaker:
           type: integer
           default: null
+        speakerIdentification:
+          type: string
+          default: null
+          description: "(Legacy) Speaker names to identify within the worker env-var collection: wildcard \"*\" or JSON list of names. Ignored when speakerIdentificationConfig is set."
+        speakerIdentificationConfig:
+          $ref: '#/components/schemas/speakerIdentificationConfig'
         serviceName:
           type: string
           default: null
-    
+
+    speakerIdentificationConfig:
+      type: object
+      description: "Speaker identification configuration. Requires enableDiarization and the X-Organization-Id header (must match organizationId). When SPEAKER_ID_API_TOKEN is set on the service, the X-Speaker-Id-Token header is also required."
+      required: [organizationId, collections]
+      properties:
+        organizationId:
+          type: string
+          description: Organization identifier (24 hexadecimal characters)
+        collections:
+          type: array
+          minItems: 1
+          maxItems: 16
+          items:
+            type: string
+          description: "Qdrant collection names, each must match spkid_{organizationId}_{collectionId}"
+        speakers:
+          description: "Wildcard \"*\" (default) or list of speaker identifiers to restrict the identification to"
+          default: "*"
+        minSimilarity:
+          type: number
+          default: null
+          description: Minimum similarity threshold (defaults to the worker setting)
+
+    voiceprintResult:
+      type: object
+      properties:
+        vector:
+          type: array
+          items:
+            type: number
+        modelId:
+          type: string
+        dim:
+          type: integer
+        durationUsed:
+          type: number
+
+    speakerIdStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["ok"]
+
+    speakerIdInfo:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        modelId:
+          type: string
+        dim:
+          type: integer
+        serviceName:
+          type: string
+
+    speakerIdError:
+      type: object
+      properties:
+        error:
+          type: string
+
+
     punctuationConfig:
       type: object
       properties:
@@ -511,6 +893,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/speechSegment'
+        diarization_speakers:
+          type: array
+          description: "Speaker list returned by the diarization worker. Contains identification scores (spk_id_score) when speaker identification was requested. May be absent on older results."
+          items:
+            type: object
     speechSegment:
       type: object
       properties:
