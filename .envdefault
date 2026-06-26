@@ -13,3 +13,6 @@ BROKER_PASS= # Broker password
 #MONGODB
 MONGO_HOST= # Result database host
 MONGO_PORT=27017 # Result database port
+
+#SPEAKER IDENTIFICATION
+#SPEAKER_ID_API_TOKEN= # Optional static token required as X-Speaker-Id-Token header on speaker identification requests

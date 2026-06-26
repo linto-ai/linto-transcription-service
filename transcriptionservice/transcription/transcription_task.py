@@ -200,7 +200,18 @@ def transcription_task_(self, task_info: dict, file_path: str):
             config.diarizationConfig.numberOfSpeaker,
             config.diarizationConfig.maxNumberOfSpeaker,
         ]
-        if config.diarizationConfig.speakerIdentification:
+        if config.diarizationConfig.speakerIdentificationConfig:
+            speaker_id_config = config.diarizationConfig.speakerIdentificationConfig
+            # The worker has no use for the organizationId: collection isolation
+            # is already enforced at the ingress level.
+            args.append(
+                {
+                    "collections": speaker_id_config["collections"],
+                    "speakers": speaker_id_config["speakers"],
+                    "minSimilarity": speaker_id_config["minSimilarity"],
+                }
+            )
+        elif config.diarizationConfig.speakerIdentification:
             args.append(config.diarizationConfig.speakerIdentification)
         diarJobId = celery.send_task(
             name=config.diarizationConfig.task_name,

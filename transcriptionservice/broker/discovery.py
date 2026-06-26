@@ -174,10 +174,24 @@ class Service:
             service_info["service_type"],
             service_info["service_language"],
             service_info["queue_name"],
-            service_info["info"],
+            cls.parse_info(service_info["info"]),
         )
         service.add_instance(service_info, service_id)
         return service
+
+    @staticmethod
+    def parse_info(info):
+        """Parse the registered info field as JSON when it holds a JSON object.
+
+        Plain string descriptions (e.g. "unknown") are kept as is."""
+        if isinstance(info, str):
+            try:
+                parsed_info = json.loads(info)
+                if isinstance(parsed_info, dict):
+                    return parsed_info
+            except json.JSONDecodeError:
+                pass
+        return info
 
     def to_dict(self) -> dict:
         return {

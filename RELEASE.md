@@ -1,3 +1,9 @@
+# 1.5.0
+- Speaker identification: new `speakerIdentificationConfig` field in diarizationConfig (organization-scoped collections) with server-side validation (org-prefix check, X-Organization-Id header, optional token)
+- New `/speaker-identification/*` HTTP routes (voiceprint compute, speaker upsert/delete, collection drop, info) proxied to the diarization worker via Celery
+- final_result now carries `diarization_speakers` (identification confidence scores), additively
+- Legacy string `speakerIdentification` still supported (object form takes precedence)
+
 # 1.4.0
 - Migrate Docker image from python:3.10 to python:3.10-alpine for reduced image size and improved security
 - Add security_level field to service registry heartbeat (with default value of 0)

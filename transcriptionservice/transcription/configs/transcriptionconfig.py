@@ -49,6 +49,9 @@ class TranscriptionConfig(Config):
         if isinstance(self.vadConfig, dict):
             self.vadConfig = VADConfig(self.vadConfig)
 
+        if self.language and "," in self.language:
+            self.language = self.language.split(",")[0]
+
         if self.enablePunctuation is not None:
             self.punctuationConfig.enablePunctuation = self.enablePunctuation
 
