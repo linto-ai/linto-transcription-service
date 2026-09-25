@@ -95,6 +95,10 @@ docker-compose up .
 |`MONGO_PORT`|MongoDB results port|`27017`|
 |`RESOLVE_POLICY`| Subservice resolve policy (default ANY) * | `ANY` \| `DEFAULT` \| `STRICT` |
 |<`SERVICE_TYPE`>`_DEFAULT`| Default serviceName for subtask <`SERVICE_TYPE`> * | `punctuation-1` |
+|`DIARIZATION_FAST_SERVICE`| Diarization routing: fast engine with a speaker ceiling (see *Diarization routing*) | `stt-diarization-nemotron` |
+|`DIARIZATION_FALLBACK_SERVICE`| Diarization routing: engine used above the ceiling, or when the fast engine fails | `stt-diarization-pyannote` |
+|`DIARIZATION_FAST_MAX_SPEAKERS`| Diarization routing: highest speaker count trusted from the fast engine (default: its registered `max_speakers` minus 1) | `7` |
+|`STALE_SERVICE_SECONDS`| A registered subservice that does not answer is removed from the registry once its heartbeat is older than this (default 600) | `600` |
 |`SPEAKER_ID_API_TOKEN`| (Optional) Static token required as `X-Speaker-Id-Token` header on speaker identification requests (see [/speaker-identification](#speaker-identification)) | `my-secret-token` |
 
 *: See [Subservice resolution](#subservice-resolution)
@@ -176,6 +180,14 @@ There is 3 policies to resolve service names:
 Resolve policy is declared at launch using the RESOLVE_POLICY environment variable: ANY | DEFAULT | STRICT (default ANY).
 
 Default service names must be declared at launch: <SERVICE_TYPE>_DEFAULT. E.g. The default punctuation subservice is "punctuation-1", `PUNCTUATION_DEFAULT=punctuation1`.
+
+__Diarization routing__
+
+When `DIARIZATION_FAST_SERVICE` and `DIARIZATION_FALLBACK_SERVICE` are both set, diarization requests with no `serviceName` (or `"auto"`) are routed:
+* `numberOfSpeaker` above the ceiling (7 for Nemotron): fallback service directly.
+* Otherwise: fast service first. If it uses all its speaker slots (result `saturated`, or more speakers than the ceiling), or if it fails, the job runs again on the fallback service.
+
+`/list-services` then lists a virtual `auto` diarization service first. An explicit `serviceName` keeps the resolve policy above.
 
 __Language compatibily__
 

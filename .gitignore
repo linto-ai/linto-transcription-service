@@ -5,3 +5,4 @@
 start_*
 *.wav
 .venv-spkid
+.venv/

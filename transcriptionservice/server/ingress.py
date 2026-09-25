@@ -11,7 +11,8 @@ from celery.signals import after_task_publish
 from flask import Flask, json, request
 
 from transcriptionservice import logger
-from transcriptionservice.broker.discovery import list_available_services
+from transcriptionservice.broker.discovery import list_available_services, prettyfy
+from transcriptionservice.transcription.utils.diarizationrouting import DiarizationRouting
 from transcriptionservice.server.confparser import createParser
 from transcriptionservice.server.formating import formatResult
 from transcriptionservice.server.mongodb.db_client import DBClient
@@ -49,7 +50,13 @@ def healthcheck():
 
 @app.route("/list-services", methods=["GET"])
 def list_subservices():
-    return list_available_services(as_json=True, ensure_alive=True), 200
+    services = list_available_services(ensure_alive=True)
+    listing = prettyfy(services)
+    # Routed diarization ("auto") first: clients pick the first diarization service
+    auto = DiarizationRouting.from_env(services.get("diarization", {})).auto_entry()
+    if auto is not None:
+        listing["diarization"].insert(0, auto)
+    return listing, 200
 
 
 @app.route("/job/<jobid>", methods=["GET"])

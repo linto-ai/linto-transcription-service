@@ -14,6 +14,7 @@ from transcriptionservice.broker.celeryapp import celery
 from transcriptionservice.broker.discovery import list_available_services
 from transcriptionservice.server.utils import fileHash
 from transcriptionservice.server.utils.ressources import write_ressource
+from transcriptionservice.transcription.utils.diarizationrouting import AUTO_SERVICE_NAME, DiarizationRouting
 from transcriptionservice.transcription.utils.serviceresolve import ServicePolicy
 
 AUDIO_FOLDER = "/opt/audio"
@@ -130,6 +131,12 @@ def resolve_speaker_id_service(service_name: str = None, ensure_alive: bool = Tr
     }
     if not candidates:
         return None
+    routing = DiarizationRouting.from_env(services)
+    if routing.configured and service_name in (None, AUTO_SERVICE_NAME):
+        # Enrollment tasks go to the fast engine first: its queue empties quicker
+        for name in (routing.fast_name, routing.fallback_name):
+            if name in candidates:
+                return candidates[name]
     if service_name is not None:
         return candidates.get(service_name)
     if ServicePolicy.from_env() == ServicePolicy.DEFAULT:
