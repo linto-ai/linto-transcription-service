@@ -98,7 +98,7 @@ docker-compose up .
 |`DIARIZATION_FAST_SERVICE`| Diarization routing: fast engine with a speaker ceiling (see *Diarization routing*) | `stt-diarization-nemotron` |
 |`DIARIZATION_FALLBACK_SERVICE`| Diarization routing: engine used above the ceiling, or when the fast engine fails | `stt-diarization-pyannote` |
 |`DIARIZATION_FAST_MAX_SPEAKERS`| Diarization routing: highest speaker count trusted from the fast engine (default: its registered `max_speakers` minus 1) | `7` |
-|`STALE_SERVICE_SECONDS`| A registered subservice that does not answer is removed from the registry once its heartbeat is older than this (default 600) | `600` |
+|`STALE_SERVICE_SECONDS`| A registered subservice that does not answer is removed from the registry once its heartbeat is older than this (default 180) | `180` |
 |`SPEAKER_ID_API_TOKEN`| (Optional) Static token required as `X-Speaker-Id-Token` header on speaker identification requests (see [/speaker-identification](#speaker-identification)) | `my-secret-token` |
 
 *: See [Subservice resolution](#subservice-resolution)

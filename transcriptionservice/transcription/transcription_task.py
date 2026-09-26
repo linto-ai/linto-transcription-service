@@ -16,7 +16,9 @@ from transcriptionservice.transcription.utils.audio import (
     transcoding,
     getDuration,
 )
-from transcriptionservice.transcription.utils.diarizationrouting import DiarizationRouting
+from transcriptionservice.transcription.utils.diarizationrouting import (
+    DiarizationRouting,
+)
 from transcriptionservice.transcription.utils.serviceresolve import (
     ResolveException,
     ServiceResolver,
@@ -39,18 +41,48 @@ def _wait(job, on_tick, interval: float = POLL_INTERVAL):
 
 
 def _report_diarization(task, progress, job):
-    """Copy the diarization worker progress (state PROGRESS, meta {"progress": x}) into the task meta."""
+    """Copy the diarization worker progress (state PROGRESS) into the task meta."""
     if job is None:
         return
     try:
         state, info = job.state, job.info
     except Exception:
         return
-    if state == "PROGRESS" and isinstance(info, dict) and "progress" in info:
+    if state != "PROGRESS" or not isinstance(info, dict):
+        return
+    try:
         value = float(info["progress"])
-        if value != progress.steps["diarization"].progress:
-            progress.steps["diarization"].progress = value
-            task.update_state(state="STARTED", meta=progress.toDict())
+    except (KeyError, TypeError, ValueError):
+        return
+    if value != progress.steps["diarization"].progress:
+        progress.steps["diarization"].progress = value
+        task.update_state(state="STARTED", meta=progress.toDict())
+
+
+def _collect_diarization(task, progress, job, fallback, routing, diar_config, args):
+    """Wait for the diarization job, rerun it on the fallback service if it failed or
+    saturated. Returns (job, result)."""
+    _wait(job, lambda: _report_diarization(task, progress, job))
+    result = job.get(disable_sync_subtasks=False, propagate=False)
+    if fallback is None:
+        return job, result
+    if job.status != celery_states.SUCCESS:
+        reason = f"failed ({result})"
+    elif routing.should_fall_back(result):
+        reason = f"found {len(result.get('speakers', []))} speakers (ceiling reached)"
+    else:
+        return job, result
+    logging.warning(
+        f"{diar_config.serviceName} {reason}, running {fallback.service_name} instead"
+    )
+    progress.steps["diarization"].progress = 0.0
+    task.update_state(state="STARTED", meta=progress.toDict())
+    job = celery.send_task(
+        name=diar_config.task_name, queue=fallback.queue_name, args=args
+    )
+    _wait(job, lambda: _report_diarization(task, progress, job))
+    return job, job.get(disable_sync_subtasks=False, propagate=False)
+
 
 # Create shared mongoclient
 db_info = {
@@ -107,17 +139,27 @@ def transcription_task_(self, task_info: dict, file_path: str):
 
     # Resolve required task queues
     resolver = ServiceResolver()
-    routing = DiarizationRouting.from_env(resolver.subservices_list.get("diarization", {}))
+    routing = DiarizationRouting.from_env(
+        resolver.subservices_list.get("diarization", {})
+    )
     diarization_fallback = None
 
     for task in config.tasks:
         try:
-            if task is config.diarizationConfig and task.isEnabled and routing.applies(task):
+            if (
+                task is config.diarizationConfig
+                and task.isEnabled
+                and routing.applies(task)
+            ):
                 primary, diarization_fallback = routing.plan(task)
                 task.setService(primary.service_name, primary.queue_name)
                 logging.info(
                     f"Diarization routed to {primary.service_name}"
-                    + (f" (fallback {diarization_fallback.service_name} if saturated)" if diarization_fallback else "")
+                    + (
+                        f" (fallback {diarization_fallback.service_name} if saturated)"
+                        if diarization_fallback
+                        else ""
+                    )
                 )
                 continue
             resolver.resolve_task(task)
@@ -304,27 +346,15 @@ def transcription_task_(self, task_info: dict, file_path: str):
 
     # Diarization result
     if config.diarizationConfig.isEnabled:
-        _wait(diarJobId, lambda: _report_diarization(self, progress, diarJobId))
-        speakers = diarJobId.get(disable_sync_subtasks=False, propagate=False)
-        if diarization_fallback is not None and (
-            diarJobId.status != celery_states.SUCCESS or routing.should_fall_back(speakers)
-        ):
-            if diarJobId.status != celery_states.SUCCESS:
-                reason = f"failed ({speakers})"
-            else:
-                reason = f"found {len(speakers.get('speakers', []))} speakers (ceiling reached)"
-            logging.warning(
-                f"{config.diarizationConfig.serviceName} {reason}, running {diarization_fallback.service_name} instead"
-            )
-            progress.steps["diarization"].progress = 0.0
-            self.update_state(state="STARTED", meta=progress.toDict())
-            diarJobId = celery.send_task(
-                name=config.diarizationConfig.task_name,
-                queue=diarization_fallback.queue_name,
-                args=diarization_args,
-            )
-            _wait(diarJobId, lambda: _report_diarization(self, progress, diarJobId))
-            speakers = diarJobId.get(disable_sync_subtasks=False, propagate=False)
+        diarJobId, speakers = _collect_diarization(
+            self,
+            progress,
+            diarJobId,
+            diarization_fallback,
+            routing,
+            config.diarizationConfig,
+            diarization_args,
+        )
         progress.steps["diarization"].state = StepState.DONE
         self.update_state(state="STARTED", meta=progress.toDict())
         logging.info(f"Diarization task complete")

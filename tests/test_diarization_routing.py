@@ -21,14 +21,27 @@ class FakeService:
         self.instances = [{"host_name": f"host-{name}"}]
 
 
-NEMOTRON = FakeService("stt-diarization-nemotron", {"engine": "nemotron", "max_speakers": 8, "speaker_identification": True, "fr": "Oui"})
-PYANNOTE = FakeService("stt-diarization-pyannote", {"engine": "pyannote", "speaker_identification": True, "fr": "Oui"})
+NEMOTRON = FakeService(
+    "stt-diarization-nemotron",
+    {
+        "engine": "nemotron",
+        "max_speakers": 8,
+        "speaker_identification": True,
+        "fr": "Oui",
+    },
+)
+PYANNOTE = FakeService(
+    "stt-diarization-pyannote",
+    {"engine": "pyannote", "speaker_identification": True, "fr": "Oui"},
+)
 
 
 def routing(services=None, max_speakers=None):
     if services is None:
         services = {s.service_name: s for s in (NEMOTRON, PYANNOTE)}
-    return DiarizationRouting(services, NEMOTRON.service_name, PYANNOTE.service_name, max_speakers)
+    return DiarizationRouting(
+        services, NEMOTRON.service_name, PYANNOTE.service_name, max_speakers
+    )
 
 
 def config(**fields):
@@ -51,7 +64,10 @@ class TestPlan:
         assert routing().plan(config(**fields)) == (primary, fallback)
 
     def test_fast_unavailable(self):
-        assert routing({PYANNOTE.service_name: PYANNOTE}).plan(config()) == (PYANNOTE, None)
+        assert routing({PYANNOTE.service_name: PYANNOTE}).plan(config()) == (
+            PYANNOTE,
+            None,
+        )
 
     def test_fallback_unavailable(self):
         r = routing({NEMOTRON.service_name: NEMOTRON})
@@ -66,7 +82,10 @@ class TestPlan:
 
     def test_fast_one_instance_responding(self):
         svc = FakeService(NEMOTRON.service_name, NEMOTRON.info)
-        svc.instances = [{"host_name": "a", "responding": False}, {"host_name": "b", "responding": True}]
+        svc.instances = [
+            {"host_name": "a", "responding": False},
+            {"host_name": "b", "responding": True},
+        ]
         r = routing({svc.service_name: svc, PYANNOTE.service_name: PYANNOTE})
         assert r.plan(config()) == (svc, PYANNOTE)
 

@@ -14,7 +14,10 @@ from transcriptionservice.broker.celeryapp import celery
 from transcriptionservice.broker.discovery import list_available_services
 from transcriptionservice.server.utils import fileHash
 from transcriptionservice.server.utils.ressources import write_ressource
-from transcriptionservice.transcription.utils.diarizationrouting import AUTO_SERVICE_NAME, DiarizationRouting
+from transcriptionservice.transcription.utils.diarizationrouting import (
+    AUTO_SERVICE_NAME,
+    DiarizationRouting,
+)
 from transcriptionservice.transcription.utils.serviceresolve import ServicePolicy
 
 AUDIO_FOLDER = "/opt/audio"

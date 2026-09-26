@@ -21,4 +21,4 @@ MONGO_PORT=27017 # Result database port
 #DIARIZATION_FAST_SERVICE=stt-diarization-nemotron
 #DIARIZATION_FALLBACK_SERVICE=stt-diarization-pyannote
 #DIARIZATION_FAST_MAX_SPEAKERS= # Default: max_speakers registered by the fast engine minus 1
-#STALE_SERVICE_SECONDS=600 # A silent registered subservice is removed once its heartbeat is older
+#STALE_SERVICE_SECONDS=180 # A silent registered subservice is removed once its heartbeat is older

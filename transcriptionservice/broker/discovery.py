@@ -17,10 +17,9 @@ SERVICE_TYPES = [
     "punctuation",
 ]  # If you intend to add other subservice, add their service's type here
 LANGUAGE = os.environ.get("LANGUAGE")
-# A registered worker that does not answer inspect is only considered gone (and its entry
-# deleted) once its heartbeat (last_alive, refreshed by the worker healthcheck) is older
-# than this: a worker busy on a long task (Celery solo pool) must stay listed.
-STALE_SERVICE_SECONDS = int(os.environ.get("STALE_SERVICE_SECONDS", 600))
+# A worker that does not answer inspect (busy solo pool) is removed only once its
+# heartbeat (last_alive, refreshed by healthcheck.sh every 60 s) is older than this
+STALE_SERVICE_SECONDS = int(os.environ.get("STALE_SERVICE_SECONDS", 180))
 
 
 def list_available_services(ensure_alive: bool = False, as_json: bool = False) -> dict:
@@ -88,16 +87,14 @@ def list_available_services(ensure_alive: bool = False, as_json: bool = False) -
             # Filter by language
             if _is_compatible_language(LANGUAGE, service_info["service_language"]):
                 # Check if the service is up
-                if (
-                    ensure_alive
-                    and service_id.split(":")[1] not in worker_names
-                    and time.time() - float(service_info.get("last_alive", 0)) > STALE_SERVICE_SECONDS
-                ):
-                    redis_client.ft().delete_document(service_id)
-                    print(f"Service host {service_id} is registered but do not exist. Removing entry from registry.")
-                    continue
                 if ensure_alive:
-                    service_info["responding"] = service_id.split(":")[1] in worker_names
+                    responding = service_id.split(":")[1] in worker_names
+                    age = time.time() - float(service_info.get("last_alive", 0))
+                    if not responding and age > STALE_SERVICE_SECONDS:
+                        redis_client.ft().delete_document(service_id)
+                        print(f"Service host {service_id} is gone, removed from registry.")
+                        continue
+                    service_info["responding"] = responding
                 if service_info["service_name"] in services[service_type]:
                     services[service_type][service_info["service_name"]].add_instance(
                         service_info, service_id
@@ -176,7 +173,6 @@ class Service:
             "concurrency": service_info["concurrency"],
         }
         if "responding" in service_info:
-            # Answered the inspect call of this listing (a busy worker running the solo pool may not)
             instance_info["responding"] = service_info["responding"]
         self.instances.append(instance_info)
 

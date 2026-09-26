@@ -12,7 +12,6 @@ from flask import Flask, json, request
 
 from transcriptionservice import logger
 from transcriptionservice.broker.discovery import list_available_services, prettyfy
-from transcriptionservice.transcription.utils.diarizationrouting import DiarizationRouting
 from transcriptionservice.server.confparser import createParser
 from transcriptionservice.server.formating import formatResult
 from transcriptionservice.server.mongodb.db_client import DBClient
@@ -31,6 +30,9 @@ from transcriptionservice.transcription.configs.transcriptionconfig import (
 from transcriptionservice.transcription.transcription_task import (
     transcription_task,
     # Future: transcription_task_multi,
+)
+from transcriptionservice.transcription.utils.diarizationrouting import (
+    DiarizationRouting,
 )
 
 AUDIO_FOLDER = "/opt/audio"
