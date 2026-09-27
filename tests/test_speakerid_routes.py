@@ -77,6 +77,8 @@ def client(app):
 def setup(monkeypatch, tmp_path):
     monkeypatch.delenv("SPEAKER_ID_API_TOKEN", raising=False)
     monkeypatch.delenv("RESOLVE_POLICY", raising=False)
+    monkeypatch.delenv("DIARIZATION_FAST_SERVICE", raising=False)
+    monkeypatch.delenv("DIARIZATION_FALLBACK_SERVICE", raising=False)
     monkeypatch.setattr(speakerid, "AUDIO_FOLDER", str(tmp_path))
     monkeypatch.setattr(
         speakerid,
@@ -373,3 +375,39 @@ class TestTranscribeAuthHelper:
             )
             is None
         )
+
+
+class TestResolveWithRouting:
+    @pytest.fixture(autouse=True)
+    def services(self, monkeypatch):
+        monkeypatch.setenv("DIARIZATION_FAST_SERVICE", "diarization-nemotron")
+        monkeypatch.setenv("DIARIZATION_FALLBACK_SERVICE", "diarization-pyannote")
+        self.listing = {
+            "diarization-pyannote": make_service("diarization-pyannote"),
+            "diarization-nemotron": make_service("diarization-nemotron"),
+        }
+        monkeypatch.setattr(
+            speakerid,
+            "list_available_services",
+            lambda ensure_alive=False: {"diarization": self.listing},
+        )
+
+    @pytest.mark.parametrize("name", [None, "auto"])
+    def test_auto_goes_to_fast(self, name):
+        service = speakerid.resolve_speaker_id_service(name)
+        assert service.service_name == "diarization-nemotron"
+
+    def test_explicit_name_kept(self):
+        service = speakerid.resolve_speaker_id_service("diarization-pyannote")
+        assert service.service_name == "diarization-pyannote"
+
+    def test_fast_without_identification_uses_fallback(self):
+        self.listing["diarization-nemotron"] = make_service(
+            "diarization-nemotron", info={"speaker_identification": False}
+        )
+        service = speakerid.resolve_speaker_id_service("auto")
+        assert service.service_name == "diarization-pyannote"
+
+    def test_auto_unknown_without_routing(self, monkeypatch):
+        monkeypatch.delenv("DIARIZATION_FAST_SERVICE")
+        assert speakerid.resolve_speaker_id_service("auto") is None

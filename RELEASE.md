@@ -1,3 +1,10 @@
+# 1.6.0
+- Diarization routing between a fast engine with a speaker ceiling (Nemotron) and a fallback engine (pyannote): `DIARIZATION_FAST_SERVICE`, `DIARIZATION_FALLBACK_SERVICE`, `DIARIZATION_FAST_MAX_SPEAKERS`. Rerun on the fallback when the fast engine saturates or fails
+- `/list-services` lists a virtual `auto` diarization service first when routing is configured
+- Diarization progress from the worker (Celery state `PROGRESS`) is reported in the task steps
+- Service discovery no longer deletes a busy worker that does not answer inspect: only entries whose heartbeat is older than `STALE_SERVICE_SECONDS` (180 s) are removed. Fix: unresponsive entries are no longer returned after deletion, and several instances of one service are now merged
+- Speaker identification routes enrollment to the fast diarization engine when routing is configured
+
 # 1.5.0
 - Speaker identification: new `speakerIdentificationConfig` field in diarizationConfig (organization-scoped collections) with server-side validation (org-prefix check, X-Organization-Id header, optional token)
 - New `/speaker-identification/*` HTTP routes (voiceprint compute, speaker upsert/delete, collection drop, info) proxied to the diarization worker via Celery

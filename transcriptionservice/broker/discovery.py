@@ -1,6 +1,7 @@
 """ The discovery submodule contains methods and function to list and fetch informations relative to subtasks."""
 import json
 import os
+import time
 
 import redis
 from redis.commands.search.field import NumericField, TextField
@@ -16,6 +17,9 @@ SERVICE_TYPES = [
     "punctuation",
 ]  # If you intend to add other subservice, add their service's type here
 LANGUAGE = os.environ.get("LANGUAGE")
+# A worker that does not answer inspect (busy solo pool) is removed only once its
+# heartbeat (last_alive, refreshed by healthcheck.sh every 60 s) is older than this
+STALE_SERVICE_SECONDS = int(os.environ.get("STALE_SERVICE_SECONDS", 180))
 
 
 def list_available_services(ensure_alive: bool = False, as_json: bool = False) -> dict:
@@ -39,7 +43,8 @@ def list_available_services(ensure_alive: bool = False, as_json: bool = False) -
     )
 
     if ensure_alive:
-        worker_names = set(k.split("@")[1] for k in celery.control.inspect().active_queues().keys())
+        active_queues = celery.control.inspect().active_queues() or {}
+        worker_names = set(k.split("@")[1] for k in active_queues.keys())
 
     # Handle indexdrop
     # Tries to restore the service index if it has been dropped.
@@ -83,12 +88,14 @@ def list_available_services(ensure_alive: bool = False, as_json: bool = False) -
             if _is_compatible_language(LANGUAGE, service_info["service_language"]):
                 # Check if the service is up
                 if ensure_alive:
-                    if not service_id.split(":")[1] in worker_names:
+                    responding = service_id.split(":")[1] in worker_names
+                    age = time.time() - float(service_info.get("last_alive", 0))
+                    if not responding and age > STALE_SERVICE_SECONDS:
                         redis_client.ft().delete_document(service_id)
-                        print(
-                            f"Service host {service_id} is registered but do not exist. Removing entry from registry."
-                        )
-                if service_info["service_name"] in services.keys():
+                        print(f"Service host {service_id} is gone, removed from registry.")
+                        continue
+                    service_info["responding"] = responding
+                if service_info["service_name"] in services[service_type]:
                     services[service_type][service_info["service_name"]].add_instance(
                         service_info, service_id
                     )
@@ -165,6 +172,8 @@ class Service:
             "version": service_info["version"],
             "concurrency": service_info["concurrency"],
         }
+        if "responding" in service_info:
+            instance_info["responding"] = service_info["responding"]
         self.instances.append(instance_info)
 
     @classmethod

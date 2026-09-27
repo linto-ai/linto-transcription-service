@@ -16,3 +16,9 @@ MONGO_PORT=27017 # Result database port
 
 #SPEAKER IDENTIFICATION
 #SPEAKER_ID_API_TOKEN= # Optional static token required as X-Speaker-Id-Token header on speaker identification requests
+#DIARIZATION ROUTING (both set = requests without serviceName, or "auto", go to the fast engine
+# and are rerun on the fallback above its speaker ceiling, on saturation or on failure)
+#DIARIZATION_FAST_SERVICE=stt-diarization-nemotron
+#DIARIZATION_FALLBACK_SERVICE=stt-diarization-pyannote
+#DIARIZATION_FAST_MAX_SPEAKERS= # Default: max_speakers registered by the fast engine minus 1
+#STALE_SERVICE_SECONDS=180 # A silent registered subservice is removed once its heartbeat is older
