@@ -1,3 +1,6 @@
+# 1.6.1
+- Fix speaker attribution when a long diarization segment contains several shorter ones: only the first one was filtered out, the others cut the long turn in the middle and its end went to another speaker
+
 # 1.6.0
 - Diarization routing between a fast engine with a speaker ceiling (Nemotron) and a fallback engine (pyannote): `DIARIZATION_FAST_SERVICE`, `DIARIZATION_FALLBACK_SERVICE`, `DIARIZATION_FAST_MAX_SPEAKERS`. Rerun on the fallback when the fast engine saturates or fails
 - `/list-services` lists a virtual `auto` diarization service first when routing is configured

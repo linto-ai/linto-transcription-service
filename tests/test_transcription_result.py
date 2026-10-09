@@ -96,3 +96,21 @@ class TestDiarizationSegmentFromDict:
         }
         result.setDiarizationResult(diarization)
         assert len(result.diarizationSegments) == 1
+
+
+class TestNestedDiarizationSegments:
+    def test_several_segments_inside_a_long_turn(self):
+        # spk1 speaks from 0 to 120 s, spk2 says two short words during that turn, spk3 speaks after
+        words = [{"word": f"w{t}", "start": float(t), "end": t + 0.5, "conf": 1.0} for t in range(0, 120, 5)]
+        words.append({"word": "next", "start": 122.0, "end": 123.0, "conf": 1.0})
+        result = TranscriptionResult([({"words": words, "confidence-score": 1.0}, 0.0)])
+        result.setDiarizationResult({
+            "segments": [
+                {"seg_begin": 0.0, "seg_end": 120.0, "spk_id": "spk1", "seg_id": 0},
+                {"seg_begin": 30.0, "seg_end": 31.0, "spk_id": "spk2", "seg_id": 1},
+                {"seg_begin": 60.0, "seg_end": 61.0, "spk_id": "spk2", "seg_id": 2},
+                {"seg_begin": 121.0, "seg_end": 130.0, "spk_id": "spk3", "seg_id": 3},
+            ],
+        })
+        assert [s.spk_id for s in result.diarizationSegments] == ["spk1", "spk3"]
+        assert [(s.speaker_id, len(s.words)) for s in result.segments] == [("spk1", 24), ("spk3", 1)]
