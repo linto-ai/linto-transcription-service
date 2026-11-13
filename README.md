@@ -237,6 +237,7 @@ Additionnaly a timestamps file can be uploaded alongside the audio file containi
 The transcription config describes the transcription input parameters and flags of the request.
 It permits to set:
 * Target language for the transcript,
+* Hotwords (words or phrases to favour in the transcript),
 * Voice Activity Detection (VAD) parameters,
 * Diarization parameters,
 * Punctuation parameters.
@@ -245,6 +246,7 @@ It is structured as follows:
 ```json
 {
   "language": "fr-FR",          # Target language for the transcript (default: null).
+  "hotwords": null,             # Words or phrases to favour, as a string or a list of strings (default: null).
   "vadConfig": {
     "enableVad": true,          # Enables Voice Activity Detection (default: true).
     "methodName": "WebRTC",     # VAD method (default: WebRTC).
@@ -271,6 +273,11 @@ It is structured as follows:
 The target `language` can be "`*`" for automatic language detection, or usual tags to describe a language ("fr", "fr-FR", "French" -- see https://github.com/linto-ai/linto-stt/tree/master/whisper#language).
 Note that the role of this parameter is different from the role of the env variable `LANGUAGE` which is used for text normalization
 (and limited to BCP-47 codes).
+
+`hotwords` bias the transcription toward given spellings (proper nouns, product names, jargon), e.g. `"LinTO, LINAGORA"` or `["LinTO", "LINAGORA"]` (a list is joined with ", ").
+They are passed to the transcription worker, so they require a worker that supports them: linto-stt 2.2.0 or later, with the Whisper engine or the HF engine with Qwen3-ASR.
+With other engines they have no effect (NeMo and Kaldi ignore them), except the HF engine with a model that has no hotword support (e.g. Cohere Transcribe), which rejects the request.
+A worker older than linto-stt 2.2.0 fails on a request with hotwords. Without hotwords, requests are sent as before (compatible with older workers).
 
 To enable speaker identification, the `speakerIdentification` field of the diarization configuration can be set to the wildcard “`*`” to enable all speakers, or to a list of speaker names (JSON format. exemple : “`["John Doe", "Bob"]`”).
 The diarization worker must have been set so that all speaker names can be matched to a set of speech samples.
