@@ -1,3 +1,6 @@
+# 1.6.2
+- Fix a task failure (`not enough values to unpack (expected 2, got 0)`) when the STT finds no word and the diarization still returns segments, as on a recording without speech: the result is now an empty transcription
+
 # 1.6.1
 - Fix speaker attribution when a long diarization segment contains several shorter ones: only the first one was filtered out, the others cut the long turn in the middle and its end went to another speaker
 
