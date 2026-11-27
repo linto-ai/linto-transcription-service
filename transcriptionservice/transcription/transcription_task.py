@@ -1,4 +1,5 @@
 """ The transcription_task module implements the transcription's task steps to be served by the request celery workers."""
+import hashlib
 import logging
 import os
 import time
@@ -31,6 +32,16 @@ from transcriptionservice.transcription.utils.taskprogression import (
 __all__ = ["transcription_task"]
 
 POLL_INTERVAL = 1.0
+
+
+def transcription_args(subfile_path: str, config: TranscriptionConfig) -> list:
+    """Arguments of the transcription worker's `transcribe_task` (linto-stt):
+    file, with_metadata, language and, only when given, hotwords (workers older
+    than linto-stt 2.2.0 take no hotwords argument)."""
+    args = [subfile_path, True, config.language]
+    if config.hotwords:
+        args.append(config.hotwords)
+    return args
 
 
 def _wait(job, on_tick, interval: float = POLL_INTERVAL):
@@ -189,6 +200,10 @@ def transcription_task_(self, task_info: dict, file_path: str):
     file_name = transcoding(file_path)
 
     task_hash = task_info["hash"] + "-" + str(config.language)
+    if config.hotwords:
+        # Hotwords change the transcription: a cached result is only reused
+        # for the same hotwords.
+        task_hash += "-" + hashlib.md5(config.hotwords.encode("utf-8")).hexdigest()
 
     # Check for available transcription
     logging.info(f"Checking for available transcription for {task_hash}")
@@ -260,7 +275,7 @@ def transcription_task_(self, task_info: dict, file_path: str):
             transJobId = celery.send_task(
                 name="transcribe_task",
                 queue=task_info["service_name"],
-                args=[subfile_path, True, config.language],
+                args=transcription_args(subfile_path, config),
             )
             transJobIds.append((transJobId, offset, duration, subfile_path))
 

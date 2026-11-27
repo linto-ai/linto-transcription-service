@@ -609,6 +609,14 @@ components:
         language:
           type: string
           default: null
+        hotwords:
+          description: "Words or phrases to favour in the transcript (proper nouns, jargon): a string, or a list of strings joined with ', '. Needs a transcription worker that supports hotwords (linto-stt >= 2.2.0, Whisper or Qwen3-ASR)."
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          default: null
         vadConfig:
           type: object
           $ref: '#/components/schemas/vadConfig'
