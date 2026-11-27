@@ -274,9 +274,9 @@ The target `language` can be "`*`" for automatic language detection, or usual ta
 Note that the role of this parameter is different from the role of the env variable `LANGUAGE` which is used for text normalization
 (and limited to BCP-47 codes).
 
-`hotwords` bias the transcription toward given spellings (proper nouns, product names, jargon), e.g. `"LinTO, LINAGORA"` or `["LinTO", "LINAGORA"]` (a list is joined with ", ").
-They are passed to the transcription worker, so they require a worker that supports them: linto-stt 2.2.0 or later, with the Whisper engine or the HF engine with Qwen3-ASR.
-With other engines they have no effect (NeMo and Kaldi ignore them), except the HF engine with a model that has no hotword support (e.g. Cohere Transcribe), which rejects the request.
+`hotwords` bias the transcription toward given spellings (proper nouns, product names, jargon), e.g. `"LinTO, LINAGORA"` or `["LinTO", "LINAGORA"]` (a list is joined with ", "). Commas separate the terms, and a term may have several words (`"Jean-Luc Machin"`); a string without a comma is one term.
+They are passed to the transcription worker, so they require a worker that supports them: linto-stt 2.2.0 or later, with the Whisper engine, the NeMo engine, or the HF engine with Qwen3-ASR or Granite Speech (4.1 and 5.0).
+The Kaldi engine ignores them. The HF engine rejects the request with a model that has no hotword support (e.g. Cohere Transcribe, Whisper, Voxtral, Granite Speech 3.3).
 A worker older than linto-stt 2.2.0 fails on a request with hotwords. Without hotwords, requests are sent as before (compatible with older workers).
 
 To enable speaker identification, the `speakerIdentification` field of the diarization configuration can be set to the wildcard “`*`” to enable all speakers, or to a list of speaker names (JSON format. exemple : “`["John Doe", "Bob"]`”).
