@@ -1,5 +1,6 @@
 # 1.7.0
 - Hotwords: new `hotwords` field in the transcription config (a string, or a list of strings), passed to the transcription worker to favour given words (requires linto-stt 2.2.0 or later, with an engine that supports hotwords). Without hotwords, the worker task is unchanged. A cached transcription is only reused for the same hotwords
+- Fix a task failure (`not enough values to unpack (expected 2, got 0)`) when the STT finds no word and the diarization still returns segments, as on a recording without speech: the result is now an empty transcription
 
 # 1.6.1
 - Fix speaker attribution when a long diarization segment contains several shorter ones: only the first one was filtered out, the others cut the long turn in the middle and its end went to another speaker

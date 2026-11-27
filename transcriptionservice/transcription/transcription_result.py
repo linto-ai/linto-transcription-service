@@ -191,7 +191,7 @@ class TranscriptionResult:
         # Sort words by start time
         if self.words_language is None:
             self.words.sort(key=lambda x: x.start)
-        else:
+        elif self.words:  # Nothing to sort (nor to unpack) when the STT found no word
             # Sort words and languages by start time (they should keep being aligned)
             assert len(self.words) == len(self.words_language)
             self.words, self.words_language = zip(*sorted(
