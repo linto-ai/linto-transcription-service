@@ -114,3 +114,27 @@ class TestNestedDiarizationSegments:
         })
         assert [s.spk_id for s in result.diarizationSegments] == ["spk1", "spk3"]
         assert [(s.speaker_id, len(s.words)) for s in result.segments] == [("spk1", 24), ("spk3", 1)]
+
+
+class TestNoWord:
+    # What the STT workers return for an audio chunk without speech
+    EMPTY = {"text": "", "language": "fr", "confidence-score": 0.0, "words": []}
+
+    def test_no_word_with_diarization_segments(self):
+        # The diarization can find turns (noise) where the STT found no word
+        result = TranscriptionResult([(dict(self.EMPTY), 0.0), (dict(self.EMPTY), 72.9)])
+        result.setDiarizationResult(DIARIZATION_RESULT)
+        assert result.segments == []
+        final = result.final_result()
+        assert final["transcription_result"] == ""
+        assert final["raw_transcription"] == ""
+        assert final["segments"] == []
+        assert len(final["diarization_segments"]) == 1
+        assert TranscriptionResult.fromDict(final).segments == []
+
+    def test_no_word_without_language(self):
+        chunk = {"text": "", "confidence-score": 0.0, "words": []}
+        result = TranscriptionResult([(chunk, 0.0)])
+        result.setDiarizationResult(DIARIZATION_RESULT)
+        assert result.segments == []
+        assert result.final_result()["transcription_result"] == ""
